@@ -2,7 +2,24 @@
 
 # Create Install AWS CLI
 sudo apt update
-sudo apt install awscli tree jq -y 
+sudo apt install awscli tree jq tzdata chrony -y 
+
+# Set the timezone to America/Los_Angeles
+echo "Setting timezone to America/Los_Angeles..."
+sudo timedatectl set-timezone America/Los_Angeles
+
+# Enable and start chrony service
+echo "Enabling and starting chrony service..."
+sudo systemctl enable chrony
+sudo systemctl start chrony
+
+# Verify the time and timezone settings
+echo "Verifying the time and timezone settings..."
+timedatectl
+
+# Check the status of chrony service
+echo "Checking the status of chrony service..."
+sudo chronyc tracking
 
 # Import Variables From Terraform
 host_count=${host_count}
