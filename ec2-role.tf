@@ -15,6 +15,13 @@ resource "aws_iam_role" "ec2_cli_role" {
       },
     ]
   })
+  tags = merge(
+    local.tag,
+    {
+      Name = format("%s-ec2-cli-role", var.application_name)
+      Purpose = format("%s ec2 cli role", var.application_name)
+    }
+  )
 }
 
 # Grants policy holder auth to use AWS CLI
@@ -32,6 +39,14 @@ resource "aws_iam_policy" "describe_instances" {
       },
     ]
   })
+
+  tags = merge(
+    local.tag,
+    {
+      Name = format("%s-iam-policy", var.application_name)
+      Purpose = format("%s describe instances iam policy", var.application_name)
+    }
+  )
 }
 
 # Bind 'describe instances' policy to 'ec2_cli_role'
@@ -45,4 +60,11 @@ resource "aws_iam_role_policy_attachment" "ec2_describe_instances" {
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = var.ec2_instance_profile_name
   role = aws_iam_role.ec2_cli_role.name
+  tags = merge(
+    local.tag,
+    {
+      Name = format("%s-ec2-instance-profile", var.application_name)
+      Purpose = format("%s ec2 instance profile", var.application_name)
+    }
+  )
 }

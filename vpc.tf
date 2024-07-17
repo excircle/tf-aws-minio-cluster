@@ -3,18 +3,26 @@ resource "aws_vpc" "main" {
   instance_tenancy     = "default"
   enable_dns_hostnames = true
 
-  tags = {
-    Name = "main"
-  }
+  tags = merge(
+    local.tag,
+    {
+      Name = format("%s VPC", var.application_name)
+      Purpose = format("%s Cluster VPC", var.application_name)
+    }
+  )
 }
 
 # Create an Internet Gateway
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
 
-  tags = {
-    Name = "main-igw"
-  }
+  tags = merge(
+    local.tag,
+    {
+      Name = format("%s IGW", var.application_name)
+      Purpose = format("IGW for %s Cluster", var.application_name)
+    }
+  )
 }
 
 # Create public subnet
@@ -24,9 +32,13 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
   availability_zone       = "us-west-2a"
 
-  tags = {
-    Name = "public"
-  }
+  tags = merge(
+    local.tag,
+    {
+      Name = format("%s Cluster Public Subnet", var.application_name)
+      Purpose = format("%s Cluster Subnet", var.application_name)
+    }
+  )
 }
 
 # Public Route Table
@@ -38,9 +50,13 @@ resource "aws_route_table" "public" {
     gateway_id = aws_internet_gateway.igw.id
   }
 
-  tags = {
-    Name = "public-route-table"
-  }
+  tags = merge(
+    local.tag,
+    {
+      Name = format("%s Cluster Route Table", var.application_name)
+      Purpose = format("%s Cluster Route Table", var.application_name)
+    }
+  )
 }
 
 # Associate Public Subnet with Public Route Table

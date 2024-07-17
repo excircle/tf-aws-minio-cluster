@@ -1,3 +1,9 @@
+variable "application_name" {
+  description = "Application Name"
+  type = string
+  default = "MinIO"
+}
+
 variable "sshkey" {
   description = "SSH key to use with EC2 host"
   type        = string

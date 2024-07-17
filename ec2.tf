@@ -2,16 +2,13 @@ resource "aws_key_pair" "access_key" {
   key_name   = var.ec2_key_name
   public_key = var.sshkey # This key is provided via TF vars on the command line
 
-  tags = {
-    Name      = var.ec2_keypair_tag_name
-    CreatedBy = var.createdby_tag
-    Owner     = var.owner_tag
-    Purpose   = var.purpose_tag
-  }
-}
-
-locals {
-  host_names = [for i in range(var.hosts) : "minio-${i + 1}"]
+  tags = merge(
+    local.tag,
+    {
+      Name = format("%s-ec2-key", var.application_name)
+      Purpose = format("%s EC2 Key Pair", var.application_name)
+    }
+  )
 }
 
 resource "aws_instance" "minio_host" {
@@ -45,13 +42,13 @@ resource "aws_instance" "minio_host" {
         hosts               = join(" ", local.host_names)
   } ))
 
-  tags = {
-    Name      = "${each.key}"
-    CreatedBy = var.createdby_tag
-    Owner     = var.owner_tag
-    Purpose   = var.purpose_tag
-    Group     = var.group_tag
-  }
+  tags = merge(
+    local.tag,
+    {
+      Name = "${each.key}"
+      Purpose = format("%s Cluster Node", var.application_name)
+    }
+  )
 }
 
 
@@ -82,4 +79,12 @@ resource "aws_security_group" "main_vpc_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = merge(
+    local.tag,
+    {
+      Name = format("%s Security Group", var.application_name)
+      Purpose = format("Security Group For %s Cluster", var.application_name)
+    }
+  )
 }
