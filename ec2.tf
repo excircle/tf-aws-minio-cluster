@@ -62,14 +62,14 @@ resource "aws_security_group" "main_vpc_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   ingress {
-    from_port   = 9001
-    to_port     = 9001
+    from_port   = var.minio_console_port # default 9001
+    to_port     = var.minio_console_port
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
   ingress {
-    from_port   = 9000
-    to_port     = 9000
+    from_port   = var.minio_api_port # default 9000
+    to_port     = var.minio_api_port
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }

@@ -21,6 +21,18 @@ variable "disks" {
   default = ["h", "i", "j", "k"] # Full disks: ["h", "i", "j", "k"]
 }
 
+variable "minio_console_port" {
+  description = "MinIO Console Port"
+  type = number
+  default = 9001
+}
+
+variable "minio_api_port" {
+  description = "MinIO API Port"
+  type = number
+  default = 9000
+}
+
 variable "ec2_key_name" {
   description = "EC2 Key Pair Name"
   type = string
