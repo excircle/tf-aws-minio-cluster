@@ -17,9 +17,9 @@ resource "aws_instance" "minio_host" {
   ami                         = var.ec2_ami_image
   instance_type               = var.ec2_instance_type
   key_name                    = aws_key_pair.access_key.key_name
-  associate_public_ip_address = true
+  associate_public_ip_address = false
   vpc_security_group_ids      = [aws_security_group.main_vpc_sg.id]
-  subnet_id                   = aws_subnet.public.id
+  subnet_id                   = aws_subnet.private.id
   iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name # Attach Profile To allow AWS CLI commands
 
   # MinIO EBS volume
