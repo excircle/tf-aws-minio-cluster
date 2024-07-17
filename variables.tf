@@ -122,3 +122,15 @@ variable "ec2_instance_profile_name" {
   type = string
   default = "ec2_instance_profile"
 }
+
+variable "load_balancing_scheme" {
+  description = "Load Balancing Scheme"
+  type = string
+  default = "NONE"
+}
+
+variable "bastion_host" {
+  description = "Create Bastion Host"
+  type = bool
+  default = false
+}
