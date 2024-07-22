@@ -4,6 +4,12 @@ variable "application_name" {
   default = "MinIO"
 }
 
+variable "az_count" {
+  description = "Number of Availability Zones - number provided traverses available zones - Example: 2 provides (us-west-2{a,b})"
+  type = number
+  default = 2
+}
+
 variable "sshkey" {
   description = "SSH key to use with EC2 host"
   type        = string
