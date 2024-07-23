@@ -41,7 +41,7 @@ resource "aws_security_group_rule" "allow_bastion_api_coms_to_minio_cluster" {
   source_security_group_id = aws_security_group.bastion_sg.id
 }
 
-resource "aws_security_group_rule" "allow_bastion_console_coms" {
+resource "aws_security_group_rule" "allow_bastion_console_coms_to_minio_cluster" {
   type                     = "ingress"
   from_port                = var.minio_console_port
   to_port                  = var.minio_console_port
@@ -52,21 +52,25 @@ resource "aws_security_group_rule" "allow_bastion_console_coms" {
 
 
 resource "aws_security_group_rule" "minio_cluster_ingress_coms" {
+  for_each = aws_subnet.private
+
   type                     = "ingress"
   from_port                = var.minio_api_port
   to_port                  = var.minio_console_port
   protocol                 = "tcp"
   security_group_id        = aws_security_group.main_vpc_sg.id
-  cidr_blocks              = [ aws_subnet.private.cidr_block ]
+  cidr_blocks              = [ each.value.cidr_block ]
 }
 
 resource "aws_security_group_rule" "minio_cluster_egress_coms" {
+  for_each = aws_subnet.private
+  
   type                     = "egress"
   from_port                = var.minio_api_port
   to_port                  = var.minio_console_port
   protocol                 = "tcp"
   security_group_id        = aws_security_group.main_vpc_sg.id
-  cidr_blocks              = [ aws_subnet.private.cidr_block ]
+  cidr_blocks              = [ each.value.cidr_block ]
 }
 
 resource "aws_security_group_rule" "allow_global_cluster_egress" {

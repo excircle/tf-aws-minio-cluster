@@ -11,6 +11,12 @@ resource "aws_key_pair" "access_key" {
   )
 }
 
+resource "random_integer" "subnet_selector" {
+  for_each = toset(local.host_names)
+  min      = 0
+  max      = length(aws_subnet.public) - 1
+}
+
 resource "aws_instance" "minio_host" {
   for_each = toset(local.host_names) # Creates a EC2 instance per string provided
 
@@ -19,7 +25,7 @@ resource "aws_instance" "minio_host" {
   key_name                    = aws_key_pair.access_key.key_name
   associate_public_ip_address = false
   vpc_security_group_ids      = [aws_security_group.main_vpc_sg.id]
-  subnet_id                   = aws_subnet.private.id
+  subnet_id                   = element([ for k, v in aws_subnet.private: v.id ], random_integer.subnet_selector[each.key].result)
   iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name # Attach Profile To allow AWS CLI commands
 
   # MinIO EBS volume

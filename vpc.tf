@@ -27,12 +27,12 @@ resource "aws_internet_gateway" "igw" {
 
 # Create public subnet
 resource "aws_subnet" "public" {
-  for_each = toset(local.selected_az)
+  for_each = local.az_map
 
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.1.0/24"
+  cidr_block              = cidrsubnet(aws_vpc.main.cidr_block, 8, each.key + 1)
   map_public_ip_on_launch = true
-  availability_zone       = "${each.value}"
+  availability_zone       = each.value
 
   tags = merge(
     local.tag,
@@ -45,9 +45,11 @@ resource "aws_subnet" "public" {
 
 # Create private subnet
 resource "aws_subnet" "private" {
+  for_each = local.az_map
+
   vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.2.0/24"
-  availability_zone = "us-west-2a"
+  cidr_block        = cidrsubnet(aws_vpc.main.cidr_block, 8, each.key + 10)
+  availability_zone = each.value
 
   tags = merge(
     local.tag,
@@ -78,8 +80,9 @@ resource "aws_route_table" "public" {
 
 # Associate Public Subnet with Public Route Table
 resource "aws_route_table_association" "public" {
-  subnet_id      = aws_subnet.public.id
+  for_each = aws_subnet.public
   route_table_id = aws_route_table.public.id
+  subnet_id      = each.value.id
 }
 
 # Create a NAT Gateway
@@ -97,7 +100,7 @@ resource "aws_eip" "nat" {
 
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.public.id
+  subnet_id     = aws_subnet.public[0].id
 
   tags = merge(
     local.tag,
@@ -128,6 +131,7 @@ resource "aws_route_table" "private" {
 
 # Associate Private Subnet with Private Route Table
 resource "aws_route_table_association" "private" {
-  subnet_id      = aws_subnet.private.id
+  for_each = aws_subnet.private
   route_table_id = aws_route_table.private.id
+  subnet_id      = each.value.id
 }
