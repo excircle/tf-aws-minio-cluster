@@ -1,5 +1,5 @@
 #------------------------------------------------------------------------------
-# MinIO Security Group & Rules
+# Private Cluster
 #------------------------------------------------------------------------------
 
 ////////////////////
@@ -23,6 +23,7 @@ resource "aws_security_group" "main_vpc_sg" {
 // Security Rules //
 ////////////////////
 
+// INGRESS
 resource "aws_security_group_rule" "allow_bastion_to_ssh_minio_cluster" {
   type                     = "ingress"
   from_port                = 22
@@ -50,7 +51,6 @@ resource "aws_security_group_rule" "allow_bastion_console_coms_to_minio_cluster"
   source_security_group_id = aws_security_group.bastion_sg.id
 }
 
-
 resource "aws_security_group_rule" "minio_cluster_ingress_coms" {
   for_each = aws_subnet.private
 
@@ -62,6 +62,7 @@ resource "aws_security_group_rule" "minio_cluster_ingress_coms" {
   cidr_blocks              = [ each.value.cidr_block ]
 }
 
+// EGRESS
 resource "aws_security_group_rule" "minio_cluster_egress_coms" {
   for_each = aws_subnet.private
   
@@ -83,7 +84,7 @@ resource "aws_security_group_rule" "allow_global_cluster_egress" {
 }
 
 #------------------------------------------------------------------------------
-# Bastion Security Group & Rules
+# Public Hosts
 #------------------------------------------------------------------------------
 
 ////////////////////
@@ -123,4 +124,22 @@ resource "aws_security_group_rule" "allow_global_egress_bastion" {
     protocol                 = "-1"
     security_group_id        = aws_security_group.bastion_sg.id
     cidr_blocks              = [ "0.0.0.0/0" ]
+}
+
+resource "aws_security_group_rule" "allow_global_api_coms_to_bastion_sg" {
+  type                     = "ingress"
+  from_port                = var.minio_api_port # 9000
+  to_port                  = var.minio_api_port
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.bastion_sg.id
+  cidr_blocks              = [ "0.0.0.0/0" ]
+}
+
+resource "aws_security_group_rule" "allow_global_console_coms_to_bastion_sg" {
+  type                     = "ingress"
+  from_port                = var.minio_console_port # 9001
+  to_port                  = var.minio_console_port
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.bastion_sg.id
+  cidr_blocks              = [ "0.0.0.0/0" ]
 }

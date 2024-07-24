@@ -1,69 +1,92 @@
 #!/bin/bash
 
-# Create Install AWS CLI
-sudo apt update
-sudo apt install awscli tree jq tzdata chrony -y 
+install_minio_dependencies() {
+  local attempt=0
+  local max_attempts=3
+  local success=false
 
-# Set the timezone to America/Los_Angeles
-echo "Setting timezone to America/Los_Angeles..."
-sudo timedatectl set-timezone America/Los_Angeles
+  while [[ $attempt -lt $max_attempts ]]; do
+    echo "Attempting to install MinIO Dependencies (Attempt: $((attempt + 1)))..."
+    sudo apt update && sudo apt install awscli tree jq tzdata chrony -y
 
-# Enable and start chrony service
-echo "Enabling and starting chrony service..."
-sudo systemctl enable chrony
-sudo systemctl start chrony
+    if [[ $? -eq 0 ]]; then
+      success=true
+      touch /tmp/minio_dependencies_installed
+      break
+    else
+      echo "Installation failed. Retrying..."
+      attempt=$((attempt + 1))
+      sleep 10
+    fi
+  done
 
-# Verify the time and timezone settings
-echo "Verifying the time and timezone settings..."
-timedatectl
+  if [[ $success == false ]]; then
+    echo "Installation of MinIO Dependencies failed after $max_attempts attempts."
+    exit 1
+  fi
+}
 
-# Check the status of chrony service
-echo "Checking the status of chrony service..."
-sudo chronyc tracking
+minio_installation() {
+  # Set the timezone to America/Los_Angeles
+  echo "Setting timezone to America/Los_Angeles..."
+  sudo timedatectl set-timezone America/Los_Angeles
 
-# Import Variables From Terraform
-host_count=${host_count}
-disk_count=${disk_count}
-node_name=$(echo ${node_name} | sed 's|[0-9]||g')
-hosts=${hosts}
+  # Enable and start chrony service
+  echo "Enabling and starting chrony service..."
+  sudo systemctl enable chrony
+  sudo systemctl start chrony
 
-# Setup Hostname
-sudo hostnamectl set-hostname ${node_name}
+  # Verify the time and timezone settings
+  echo "Verifying the time and timezone settings..."
+  timedatectl
 
-# Download MinIO Server Binary
-wget https://dl.min.io/server/minio/release/linux-amd64/minio
+  # Check the status of chrony service
+  echo "Checking the status of chrony service..."
+  sudo chronyc tracking
 
-# Make executable
-chmod +x minio
+  # Import Variables From Terraform
+  host_count=${host_count}
+  disk_count=${disk_count}
+  node_name=$(echo ${node_name} | sed 's|[0-9]||g')
+  hosts=${hosts}
 
-# Move into /usr/local/bin
-sudo mv minio /usr/local/bin/
+  # Setup Hostname
+  sudo hostnamectl set-hostname ${node_name}
 
-# Download MinIO Command Line Client
-wget https://dl.min.io/client/mc/release/linux-amd64/mc
+  # Download MinIO Server Binary
+  wget https://dl.min.io/server/minio/release/linux-amd64/minio
 
-# Make Executable
-chmod +x mc
+  # Make executable
+  chmod +x minio
 
-# Add to usr local
-sudo mv mc /usr/local/bin
+  # Move into /usr/local/bin
+  sudo mv minio /usr/local/bin/
 
-# Create minio-user group
-sudo groupadd -r minio-user
+  # Download MinIO Command Line Client
+  wget https://dl.min.io/client/mc/release/linux-amd64/mc
 
-# Create minio-user user
-sudo useradd -m -d /home/minio-user -r -g minio-user minio-user
+  # Make Executable
+  chmod +x mc
 
-# Establish Disks
-idx=1
-for disk in ${disks}; do
-  sudo mkfs.xfs /dev/$disk
-  sudo mkdir -p /mnt/data$idx
-  sudo mount /dev/$disk /mnt/data$idx
-  sudo chown -R minio-user:minio-user /mnt/data$idx  sudo chown -R minio-user:minio-user /mnt/data$idx
-  echo "/dev/$disk /mnt/data$idx xfs defaults,nofail 0 2" | sudo tee -a /etc/fstab
-  ((idx++))
-done
+  # Add to usr local
+  sudo mv mc /usr/local/bin
+
+  # Create minio-user group
+  sudo groupadd -r minio-user
+
+  # Create minio-user user
+  sudo useradd -m -d /home/minio-user -r -g minio-user minio-user
+
+  # Establish Disks
+  idx=1
+  for disk in ${disks}; do
+    sudo mkfs.xfs /dev/$disk
+    sudo mkdir -p /mnt/data$idx
+    sudo mount /dev/$disk /mnt/data$idx
+    sudo chown -R minio-user:minio-user /mnt/data$idx  sudo chown -R minio-user:minio-user /mnt/data$idx
+    echo "/dev/$disk /mnt/data$idx xfs defaults,nofail 0 2" | sudo tee -a /etc/fstab
+    ((idx++))
+  done
 
 # Create MinIO Defaults File
 sudo tee /etc/default/minio > /dev/null << EOF
@@ -130,9 +153,30 @@ SendSIGKILL=no
 WantedBy=multi-user.target
 EOF
 
-# Update /etc/hosts file with private ips
-for host in ${hosts}; do
-  REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)
-  PRIVATE_IP=$(aws ec2 describe-instances   --region $REGION   --filters "Name=tag:Name,Values=$host"   --query 'Reservations[*].Instances[*].PrivateIpAddress'   --output text)
-  echo -e "$PRIVATE_IP $host" | sudo tee -a /etc/hosts
-done
+  # Update /etc/hosts file with private ips
+  for host in ${hosts}; do
+    REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)
+    PRIVATE_IP=$(aws ec2 describe-instances   --region $REGION   --filters "Name=tag:Name,Values=$host"   --query 'Reservations[*].Instances[*].PrivateIpAddress'   --output text)
+    echo -e "$PRIVATE_IP $host" | sudo tee -a /etc/hosts
+  done
+
+  # Enable and start minio service
+  sudo systemctl start minio
+}
+
+############
+### MAIN ###
+############
+
+main() {
+  install_minio_dependencies
+  # If /tmp/minio_dependencies_installed exists, then execute the minio_installation function
+  if [[ -f /tmp/minio_dependencies_installed ]]; then
+    minio_installation
+  else
+    echo "MinIO Dependencies not installed. Exiting..."
+    exit 1
+  fi
+}
+
+main
