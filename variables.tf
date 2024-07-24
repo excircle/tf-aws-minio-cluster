@@ -5,9 +5,15 @@ variable "application_name" {
 }
 
 variable "az_count" {
-  description = "Number of Availability Zones - number provided traverses available zones - Example: 2 provides (us-west-2{a,b})"
+  description = "Number of Availability Zones - number provided traverses available zones - Example: 2 provide (us-west-2{a,b})"
   type = number
   default = 2
+}
+
+variable "make_private" {
+  description = "Make the cluster private"
+  type = bool
+  default = false
 }
 
 variable "sshkey" {

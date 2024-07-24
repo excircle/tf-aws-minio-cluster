@@ -62,6 +62,17 @@ resource "aws_security_group_rule" "minio_cluster_ingress_coms" {
   cidr_blocks              = [ each.value.cidr_block ]
 }
 
+resource "aws_security_group_rule" "minio_cluster_ingress_public_coms" {
+  count = var.make_private == false ? 1 : 0
+
+  type                     = "ingress"
+  from_port                = 0
+  to_port                  = 65535
+  protocol                 = -1
+  security_group_id        = aws_security_group.main_vpc_sg.id
+  cidr_blocks              = [ "0.0.0.0/0" ]
+}
+
 // EGRESS
 resource "aws_security_group_rule" "minio_cluster_egress_coms" {
   for_each = aws_subnet.private

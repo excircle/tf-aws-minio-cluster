@@ -45,7 +45,7 @@ resource "aws_subnet" "public" {
 
 # Create private subnet
 resource "aws_subnet" "private" {
-  for_each = local.az_map
+  for_each = var.make_private ? local.az_map : {}
 
   vpc_id            = aws_vpc.main.id
   cidr_block        = cidrsubnet(aws_vpc.main.cidr_block, 8, each.key + 10)
@@ -87,19 +87,21 @@ resource "aws_route_table_association" "public" {
 
 # Create a NAT Gateway
 resource "aws_eip" "nat" {
-  domain   = "vpc"
+  count = var.make_private ? 1 : 0
+  domain = "vpc"
 
   tags = merge(
     local.tag,
     {
-      Name    = format("%s NAT EIP", var.application_name)
-      Purpose = format("%s Cluster NAT Gateway EIP", var.application_name)
+      Name = format("%s EIP for NAT Gateway", var.application_name)
     }
   )
 }
 
+
 resource "aws_nat_gateway" "nat" {
-  allocation_id = aws_eip.nat.id
+  count = var.make_private ? 1 : 0
+  allocation_id = aws_eip.nat[count.index].id
   subnet_id     = aws_subnet.public[0].id
 
   tags = merge(
@@ -111,13 +113,15 @@ resource "aws_nat_gateway" "nat" {
   )
 }
 
+
 # Private Route Table
 resource "aws_route_table" "private" {
+  count = var.make_private ? 1 : 0
   vpc_id = aws_vpc.main.id
 
   route {
     cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.nat.id
+    nat_gateway_id = aws_nat_gateway.nat[0].id
   }
 
   tags = merge(
@@ -132,6 +136,6 @@ resource "aws_route_table" "private" {
 # Associate Private Subnet with Private Route Table
 resource "aws_route_table_association" "private" {
   for_each = aws_subnet.private
-  route_table_id = aws_route_table.private.id
+  route_table_id = aws_route_table.private[0].id
   subnet_id      = each.value.id
 }

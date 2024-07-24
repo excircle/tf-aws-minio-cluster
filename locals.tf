@@ -7,7 +7,7 @@ locals {
     Purpose   = null
   }
   // Host names
-  host_names = [for i in range(var.hosts) : "xminio-${i + 1}"]
+  host_names = [for i in range(var.hosts) : "minio-${i + 1}"]
   // Availability Zones
   az = data.aws_availability_zones.available.names
   selected_az = slice(local.az, 0, var.az_count)
