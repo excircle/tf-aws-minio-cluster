@@ -161,6 +161,7 @@ EOF
   done
 
   # Enable and start minio service
+  sudo systemctl enable minio
   sudo systemctl start minio
 }
 
