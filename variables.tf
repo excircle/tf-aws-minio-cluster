@@ -54,7 +54,7 @@ variable "ec2_key_name" {
 variable "ec2_keypair_tag_name" {
   description = "EC2 Key Pair Tag Name"
   type = string
-  default = "minio-key"
+  default = "minio-key2"
 }
 
 variable "createdby_tag" {

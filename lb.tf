@@ -90,14 +90,14 @@ resource "aws_lb_listener" "minio_api_lb_listener" {
 }
 
 resource "aws_lb_target_group_attachment" "minio_console" {
-  for_each          = aws_instance.minio_host
+  for_each          = var.load_balancing_scheme != "NONE" ? aws_instance.minio_host : {}
   target_group_arn  = aws_lb_target_group.minio_console_lb_target_group[0].arn
   target_id         = each.value.id
   port              = var.minio_console_port
 }
 
 resource "aws_lb_target_group_attachment" "minio_api" {
-  for_each          = aws_instance.minio_host
+  for_each          = var.load_balancing_scheme != "NONE" ? aws_instance.minio_host : {}
   target_group_arn  = aws_lb_target_group.minio_api_lb_target_group[0].arn
   target_id         = each.value.id
   port              = var.minio_api_port
