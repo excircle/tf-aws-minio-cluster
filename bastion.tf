@@ -17,6 +17,23 @@ resource "aws_instance" "bastion_host" {
 apt update -y   
 apt install mlocate awscli tree jq tzdata chrony -y
 
+# Set the timezone to America/Los_Angeles
+echo "Setting timezone to America/Los_Angeles..."
+sudo timedatectl set-timezone America/Los_Angeles
+
+# Enable and start chrony service
+echo "Enabling and starting chrony service..."
+sudo systemctl enable chrony
+sudo systemctl start chrony
+
+# Verify the time and timezone settings
+echo "Verifying the time and timezone settings..."
+timedatectl
+
+# Check the status of chrony service
+echo "Checking the status of chrony service..."
+sudo chronyc tracking
+
 # Set hostname
 hostnamectl set-hostname minio-bastion-host
 
