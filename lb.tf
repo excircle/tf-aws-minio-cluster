@@ -7,7 +7,7 @@ resource "aws_lb" "minio_lb" {
   internal           = var.load_balancing_scheme == "INTERNAL" ? true : false
   load_balancer_type = "application"
   security_groups = [aws_security_group.bastion_sg.id]
-  subnets            = [ for k, v in aws_subnet.public : v.id ]
+  subnets            = [ for k, v in var.subnets : v.id ]
   tags               = merge(
     local.tag,
     {
@@ -23,7 +23,7 @@ resource "aws_lb_target_group" "minio_console_lb_target_group" {
   target_type          = "instance"
   port                 = var.minio_console_port
   protocol             = "HTTP"
-  vpc_id               = aws_vpc.main.id
+  vpc_id               = var.vpc_id
   deregistration_delay = 15
   tags                 = merge(
     local.tag,
@@ -40,7 +40,7 @@ resource "aws_lb_target_group" "minio_api_lb_target_group" {
   target_type          = "instance"
   port                 = var.minio_api_port
   protocol             = "HTTP"
-  vpc_id               = aws_vpc.main.id
+  vpc_id               = var.vpc_id
   deregistration_delay = 15
   tags                 = merge(
     local.tag,
