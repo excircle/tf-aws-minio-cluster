@@ -34,10 +34,19 @@ resource "aws_security_group_rule" "allow_bastion_to_ssh_minio_cluster" {
   source_security_group_id = aws_security_group.bastion_sg.id
 }
 
-resource "aws_security_group_rule" "allow_aistor" {
+resource "aws_security_group_rule" "allow_minio_api" {
   type                     = "ingress"
-  from_port                = 8444
-  to_port                  = 8444
+  from_port                = var.minio_api_port
+  to_port                  = var.minio_api_port
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.main_vpc_sg.id
+  cidr_blocks              = [ "0.0.0.0/0" ]
+}
+
+resource "aws_security_group_rule" "allow_minio_console" {
+  type                     = "ingress"
+  from_port                = var.minio_console_port
+  to_port                  = var.minio_console_port
   protocol                 = "tcp"
   security_group_id        = aws_security_group.main_vpc_sg.id
   cidr_blocks              = [ "0.0.0.0/0" ]
