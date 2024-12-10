@@ -34,7 +34,7 @@ resource "aws_security_group_rule" "allow_bastion_to_ssh_minio_cluster" {
   source_security_group_id = aws_security_group.bastion_sg.id
 }
 
-resource "aws_security_group_rule" "allow_minio_api" {
+resource "aws_security_group_rule" "allow_minio_api_ingress" {
   type                     = "ingress"
   from_port                = var.minio_api_port
   to_port                  = var.minio_api_port
@@ -43,7 +43,7 @@ resource "aws_security_group_rule" "allow_minio_api" {
   cidr_blocks              = [ "0.0.0.0/0" ]
 }
 
-resource "aws_security_group_rule" "allow_minio_console" {
+resource "aws_security_group_rule" "allow_minio_console_ingress" {
   type                     = "ingress"
   from_port                = var.minio_console_port
   to_port                  = var.minio_console_port
@@ -142,22 +142,4 @@ resource "aws_security_group_rule" "allow_global_egress_bastion" {
     protocol                 = "-1"
     security_group_id        = aws_security_group.bastion_sg.id
     cidr_blocks              = [ "0.0.0.0/0" ]
-}
-
-resource "aws_security_group_rule" "allow_global_grafana_bastion_sg" {
-  type                     = "ingress"
-  from_port                = 3000
-  to_port                  = 3000
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.bastion_sg.id
-  cidr_blocks              = [ "0.0.0.0/0" ]
-}
-
-resource "aws_security_group_rule" "allow_global_prometheus_bastion_sg" {
-  type                     = "ingress"
-  from_port                = 9090
-  to_port                  = 9090
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.bastion_sg.id
-  cidr_blocks              = [ "0.0.0.0/0" ]
 }

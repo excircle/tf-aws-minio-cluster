@@ -17,6 +17,27 @@ resource "random_integer" "subnet_selector" {
   max      = length(var.subnets) - 1
 }
 
+resource "aws_ebs_volume" "minio_disks" {
+  depends_on = [ aws_instance.minio_host ]
+  for_each          = { for v in local.ebs_volumes : v.unique_key => v }
+  availability_zone = each.value.availability_zone
+  size              = var.ebs_storage_volume_size
+  type              = "gp3"
+
+  tags = {
+    Name    = each.key
+    ID      = each.value.id
+    Drive   = each.value.disk_name
+  }
+}
+
+resource "aws_volume_attachment" "minio_disk_attachments" {
+  for_each    = aws_ebs_volume.minio_disks
+  device_name = format("/dev/%s", each.value.tags.Drive)
+  volume_id   = each.value.id
+  instance_id = each.value.tags.ID
+}
+
 resource "aws_instance" "minio_host" {
   for_each = toset(local.host_names) # Creates an EC2 instance per string provided
 
@@ -33,16 +54,6 @@ resource "aws_instance" "minio_host" {
     volume_size = var.ebs_root_volume_size
     volume_type = "gp3"
     delete_on_termination = true
-  }
-
-  # MinIO EBS volume
-  dynamic "ebs_block_device" {
-    for_each = toset(slice(local.disks, 0, var.num_disks))
-    content {
-      device_name = "/dev/xvd${ebs_block_device.value}"
-      volume_size = var.ebs_storage_volume_size                                       # Set the size as needed
-      delete_on_termination = true
-    }
   }
 
   # User data script to bootstrap MinIO
