@@ -35,22 +35,12 @@ resource "aws_instance" "minio_host" {
     delete_on_termination = true
   }
 
-  # MinIO EBS volume
-  dynamic "ebs_block_device" {
-    for_each = toset(slice(local.disks, 0, var.num_disks))
-    content {
-      device_name = "/dev/xvd${ebs_block_device.value}"
-      volume_size = var.ebs_storage_volume_size                                       # Set the size as needed
-      delete_on_termination = true
-    }
-  }
-
   # User data script to bootstrap MinIO
   user_data = base64encode(templatefile("${path.module}/setup.sh", {
-        hosts               = join(" ", local.host_names)
+        hosts               = tostring(join(" ", local.host_names))
         node_name           = "${each.key}"
-        disks               = join(" ", formatlist("xvd%s", local.disks))
-        host_count          = length(local.host_names)
+        disks               = join(" ", local.disk_names)
+        host_count          = tostring(length(local.host_names))
         disk_count          = var.num_disks
         package_manager     = var.package_manager
         system_user         = var.system_user

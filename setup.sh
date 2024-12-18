@@ -49,6 +49,7 @@ minio_installation() {
   disk_count=${disk_count}
   node_name=$(echo ${node_name} | sed 's|[0-9]||g')
   hosts=${hosts}
+  disks=${disks}
 
   # Setup Hostname
   sudo hostnamectl set-hostname ${node_name}
@@ -76,6 +77,20 @@ minio_installation() {
 
   # Create minio-user user
   sudo useradd -m -d /home/minio-user -r -g minio-user minio-user
+
+  # Until loop that waits for all xvd disks to be attached
+  echo "Starting for loop"
+  echo $disks
+  for disk in ${disks}; do
+    name=$(echo $disk | sed "s|\/| |g" | awk {'print $NF'})
+    while [[ $(lsblk | grep $name | wc -l) == "0" ]]; do
+      echo "$(date) - Disk $disk not found...waiting..."
+      sleep 5
+    done;
+    echo "$(date) - Found $disk"
+  done;
+  echo "For loop completed"
+
 
   # Establish Disks
   idx=1
@@ -161,8 +176,8 @@ EOF
   done
 
   # Enable and start minio service
-  sudo systemctl enable minio
-  sudo systemctl start minio
+  # sudo systemctl enable minio
+  # sudo systemctl start minio
 }
 
 ############
