@@ -23,3 +23,7 @@ output "minio_host_info" {
     }
   }
 }
+
+output "ebs_storage_volume_size" {
+  value = var.ebs_storage_volume_size
+}
