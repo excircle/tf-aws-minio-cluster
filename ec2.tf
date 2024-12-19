@@ -1,5 +1,5 @@
 resource "aws_key_pair" "access_key" {
-  key_name   = var.ec2_key_name
+  key_name   = format("%s-%s", var.application_name, var.ec2_key_name)
   public_key = var.sshkey # This key is provided via TF vars on the command line
 
   tags = merge(

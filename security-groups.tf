@@ -7,7 +7,7 @@
 ////////////////////
 
 resource "aws_security_group" "main_vpc_sg" {
-  name   = var.aws_security_group_name
+  name   = format("%s-sec-group", var.application_name)
   vpc_id = var.vpc_id
 
   tags = merge(
@@ -34,19 +34,10 @@ resource "aws_security_group_rule" "allow_bastion_to_ssh_minio_cluster" {
   source_security_group_id = aws_security_group.bastion_sg.id
 }
 
-resource "aws_security_group_rule" "allow_minio_api_ingress" {
+resource "aws_security_group_rule" "allow_aistor" {
   type                     = "ingress"
-  from_port                = var.minio_api_port
-  to_port                  = var.minio_api_port
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.main_vpc_sg.id
-  cidr_blocks              = [ "0.0.0.0/0" ]
-}
-
-resource "aws_security_group_rule" "allow_minio_console_ingress" {
-  type                     = "ingress"
-  from_port                = var.minio_console_port
-  to_port                  = var.minio_console_port
+  from_port                = 8444
+  to_port                  = 8444
   protocol                 = "tcp"
   security_group_id        = aws_security_group.main_vpc_sg.id
   cidr_blocks              = [ "0.0.0.0/0" ]
@@ -110,7 +101,7 @@ resource "aws_security_group_rule" "allow_global_cluster_egress" {
 ////////////////////
 
 resource "aws_security_group" "bastion_sg" {
-  name   = "bastion-security-group"
+  name   = format("%s-bastion-sec-group", var.application_name)
   vpc_id = var.vpc_id
 
   tags = merge(
@@ -142,4 +133,22 @@ resource "aws_security_group_rule" "allow_global_egress_bastion" {
     protocol                 = "-1"
     security_group_id        = aws_security_group.bastion_sg.id
     cidr_blocks              = [ "0.0.0.0/0" ]
+}
+
+resource "aws_security_group_rule" "allow_global_grafana_bastion_sg" {
+  type                     = "ingress"
+  from_port                = 3000
+  to_port                  = 3000
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.bastion_sg.id
+  cidr_blocks              = [ "0.0.0.0/0" ]
+}
+
+resource "aws_security_group_rule" "allow_global_prometheus_bastion_sg" {
+  type                     = "ingress"
+  from_port                = 9090
+  to_port                  = 9090
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.bastion_sg.id
+  cidr_blocks              = [ "0.0.0.0/0" ]
 }
