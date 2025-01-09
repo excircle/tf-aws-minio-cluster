@@ -43,6 +43,24 @@ resource "aws_security_group_rule" "allow_aistor" {
   cidr_blocks              = [ "0.0.0.0/0" ]
 }
 
+resource "aws_security_group_rule" "allow_minio_server_api" {
+  type                     = "ingress"
+  from_port                = 9000
+  to_port                  = 9000
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.main_vpc_sg.id
+  cidr_blocks              = [ "0.0.0.0/0" ]
+}
+
+resource "aws_security_group_rule" "allow_minio_server_console" {
+  type                     = "ingress"
+  from_port                = 9001
+  to_port                  = 9001
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.main_vpc_sg.id
+  cidr_blocks              = [ "0.0.0.0/0" ]
+}
+
 resource "aws_security_group_rule" "allow_aistor2" {
   type                     = "ingress"
   from_port                = 7899

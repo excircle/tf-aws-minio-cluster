@@ -44,6 +44,7 @@ resource "aws_instance" "minio_host" {
         disk_count          = var.num_disks
         package_manager     = var.package_manager
         system_user         = var.system_user
+        volume_name         = var.application_name
   } ))
 
   tags = merge(

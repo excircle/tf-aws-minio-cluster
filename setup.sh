@@ -50,6 +50,7 @@ minio_installation() {
   node_name=$(echo ${node_name} | sed 's|[0-9]||g')
   hosts=${hosts}
   disks=${disks}
+  volume_name=${volume_name}
 
   # Setup Hostname
   sudo hostnamectl set-hostname ${node_name}
@@ -115,7 +116,7 @@ MINIO_ROOT_PASSWORD=miniominio
 
 # MINIO_VOLUMES sets the storage volume or path to use for the MinIO server.
 
-MINIO_VOLUMES="http://$${node_name}{1...$${host_count}}:9000/mnt/data{1...$${disk_count}}/minio"
+MINIO_VOLUMES="http://$${volume_name}-{1...$${host_count}}:9000/mnt/data{1...$${disk_count}}/minio"
 
 # MINIO_OPTS sets any additional commandline options to pass to the MinIO server.
 # For example, '--console-address :9001' sets the MinIO Console listen port
@@ -176,8 +177,8 @@ EOF
   done
 
   # Enable and start minio service
-  # sudo systemctl enable minio
-  # sudo systemctl start minio
+  sudo systemctl enable minio
+  sudo systemctl start minio
 }
 
 ############
