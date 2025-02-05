@@ -27,6 +27,20 @@ install_minio_dependencies() {
 }
 
 minio_installation() {
+
+
+  # Setup Hostname
+  node_name=$(echo ${node_name} | sed 's|[0-9]||g')
+  sudo hostnamectl set-hostname ${node_name}
+
+  # If hostnamectl set-hostname command was successful, then write hostname to /etc/hostname-changed
+  if [[ $? -eq 0 ]]; then
+    echo "Hostname changed to ${node_name}"
+    echo ${node_name} | sudo tee /etc/hostname-changed
+  else
+    echo "Failed to change hostname to ${node_name}"
+  fi
+
   # Set the timezone to America/Los_Angeles
   echo "Setting timezone to America/Los_Angeles..."
   sudo timedatectl set-timezone America/Los_Angeles
@@ -47,13 +61,9 @@ minio_installation() {
   # Import Variables From Terraform
   host_count=${host_count}
   disk_count=${disk_count}
-  node_name=$(echo ${node_name} | sed 's|[0-9]||g')
   hosts=${hosts}
   disks=${disks}
   volume_name=${volume_name}
-
-  # Setup Hostname
-  sudo hostnamectl set-hostname ${node_name}
 
   # Download MinIO Server Binary
   wget https://dl.min.io/server/minio/release/linux-amd64/minio
