@@ -64,9 +64,61 @@ minio_installation() {
   hosts=${hosts}
   disks=${disks}
   volume_name=${volume_name}
+  minio_binary_arch=${minio_binary_arch}
+  minio_binary_version=${minio_binary_version}
+  minio_flavor=${minio_flavor}
+  minio_license=${minio_license}
+
+  # Download AiStor Binary
+  if [[ $minio_flavor == "aistor" ]]; then
+    # License file is required for AiStor - Create /opt/minio/license
+    mkdir -p /opt/minio
+    echo $minio_license > /opt/minio/license
+
+    # If minio_binary_version is set to "latest", then download the latest MinIO AiStor Binary
+    if [[ $minio_binary_version == "latest" ]]; then
+      echo "Downloading Latest MinIO AiStor Binary..."
+      wget https://dl.min.io/$minio_flavor/minio/release/$minio_binary_arch/minio
+      
+      # If wget fails exit
+      if [[ $? -ne 0 ]]; then
+        echo "Failed to download MinIO AiStor Binary. Exiting..."
+        exit 1
+      fi
+
+    else
+      # Download Specific MinIO AiStor Binary
+      wget -O minio https://dl.min.io/$minio_flavor/minio/release/$minio_binary_arch/archive/$minio_binary_version
+      
+      # If wget command fails, exit
+      if [[ $? -ne 0 ]]; then
+        echo "Failed to download MinIO AiStor Binary. Exiting..."
+        exit 1
+      fi
+
+    fi
+  fi
 
   # Download MinIO Server Binary
-  wget https://dl.min.io/server/minio/release/linux-amd64/minio
+  if [[ $minio_flavor == "server" ]]; then
+    # If minio_binary_version is set to "latest", then download the latest MinIO Server Binary
+    if [[ $minio_binary_version == "latest" ]]; then
+      echo "Downloading Latest MinIO Server Binary..."
+      wget https://dl.min.io/server/minio/release/linux-amd64/minio
+      if [[ $? -ne 0 ]]; then
+        echo "Failed to download MinIO Server Binary. Exiting..."
+        exit 1
+      fi
+    else
+      # Download Specific MinIO Server Binary
+      wget -O minio https://dl.min.io/server/minio/release/$minio_binary_arch/archive/$minio_binary_version
+      wget -O minio https://dl.min.io/server/minio/release/linux-amd64/archive/minio.RELEASE.2024-03-03T17-50-39Z
+      if [[ $? -ne 0 ]]; then
+        echo "Failed to download MinIO Server Binary. Exiting..."
+        exit 1
+      fi
+    fi
+  fi
 
   # Make executable
   chmod +x minio
@@ -114,8 +166,36 @@ minio_installation() {
     ((idx++))
   done
 
-# Create MinIO Defaults File
-sudo tee /etc/default/minio > /dev/null << EOF
+  # Render AiStor Defaults File or MinIO Server Defaults file based on minio_flavor
+  if [[ "$minio_flavor" == "aistor" ]]; then
+    sudo tee /etc/default/minio > /dev/null << EOF
+# MINIO_ROOT_USER and MINIO_ROOT_PASSWORD sets the root account for the MinIO server.
+# This user has unrestricted permissions to perform S3 and administrative API operations on any resource in the deployment.
+# Omit to use the default values 'minioadmin:minioadmin'.
+# MinIO recommends setting non-default values as a best practice, regardless of environment
+
+MINIO_ROOT_USER=miniominio
+MINIO_ROOT_PASSWORD=miniominio
+MINIO_LICENSE=/opt/minio/license
+
+# MINIO_VOLUMES sets the storage volume or path to use for the MinIO server.
+
+MINIO_VOLUMES="http://$${volume_name}-{1...$${host_count}}:9000/mnt/data{1...$${disk_count}}/minio"
+
+# MINIO_OPTS sets any additional commandline options to pass to the MinIO server.
+# For example, '--console-address :9001' sets the MinIO Console listen port
+MINIO_OPTS="--address 0.0.0.0:9000 --console-address 0.0.0.0:9001"
+
+# MINIO_SERVER_URL sets the hostname of the local machine for use with the MinIO Server
+# MinIO assumes your network control plane can correctly resolve this hostname to the local machine
+
+# Uncomment the following line and replace the value with the correct hostname for the local machine and port for the MinIO server (9000 by default).
+
+MINIO_SERVER_URL="http://0.0.0.0:9000"
+EOF
+
+  elif [[ "$minio_flavor" == "server" ]]; then
+    sudo tee /etc/default/minio > /dev/null << EOF
 # MINIO_ROOT_USER and MINIO_ROOT_PASSWORD sets the root account for the MinIO server.
 # This user has unrestricted permissions to perform S3 and administrative API operations on any resource in the deployment.
 # Omit to use the default values 'minioadmin:minioadmin'.
@@ -139,7 +219,11 @@ MINIO_OPTS="--address 0.0.0.0:9000 --console-address 0.0.0.0:9001"
 
 MINIO_SERVER_URL="http://0.0.0.0:9000"
 EOF
+  else
+    echo "Invalid minio_flavor: $minio_flavor. No configuration changes applied."
+  fi
 
+# Create MinIO systemd service
 sudo tee /usr/lib/systemd/system/minio.service > /dev/null << 'EOF'
 [Unit]
 Description=MinIO
