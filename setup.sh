@@ -104,7 +104,7 @@ minio_installation() {
     # If minio_binary_version is set to "latest", then download the latest MinIO Server Binary
     if [[ $minio_binary_version == "latest" ]]; then
       echo "Downloading Latest MinIO Server Binary..."
-      wget https://dl.min.io/server/minio/release/linux-amd64/minio
+      wget https://dl.min.io/server/minio/release/$minio_binary_arch/minio
       if [[ $? -ne 0 ]]; then
         echo "Failed to download MinIO Server Binary. Exiting..."
         exit 1
@@ -112,7 +112,6 @@ minio_installation() {
     else
       # Download Specific MinIO Server Binary
       wget -O minio https://dl.min.io/server/minio/release/$minio_binary_arch/archive/$minio_binary_version
-      wget -O minio https://dl.min.io/server/minio/release/linux-amd64/archive/minio.RELEASE.2024-03-03T17-50-39Z
       if [[ $? -ne 0 ]]; then
         echo "Failed to download MinIO Server Binary. Exiting..."
         exit 1
@@ -120,6 +119,27 @@ minio_installation() {
     fi
   fi
 
+  # Download MinIO Server Binary
+  if [[ $minio_flavor == "hotfix" ]]; then
+    # If minio_binary_version is set to "latest", then download the latest MinIO Server Binary
+    if [[ $minio_binary_version == "latest" ]]; then
+      echo "Downloading Latest MinIO Server Binary..."
+      wget https://dl.min.io/server/minio/hotfixes/$minio_binary_arch/minio
+      if [[ $? -ne 0 ]]; then
+        echo "Failed to download MinIO Server Binary. Exiting..."
+        exit 1
+      fi
+    else
+      # Download Specific MinIO Server Binary
+      wget -O minio wget https://dl.min.io/server/minio/hotfixes/$minio_binary_arch/$minio_binary_version
+      if [[ $? -ne 0 ]]; then
+        echo "Failed to download MinIO Server Binary. Exiting..."
+        exit 1
+      fi
+    fi
+  fi
+
+  # https://dl.min.io/server/minio/hotfixes/linux-amd64/minio.RELEASE.2025-01-20T14-49-07Z.hotfix.6f6982818
   # Make executable
   chmod +x minio
 
