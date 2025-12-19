@@ -76,6 +76,30 @@ variable "ebs_storage_volume_size" {
   type = number
 }
 
+variable "minio_license" {
+  description = "MinIO License File"
+  type = string
+  default = ""
+}
+
+variable "minio_binary_version" {
+  description = "MinIO Binary Version (e.g., 'minio.RELEASE.2025-10-17T06-17-41Z' or 'latest')"
+  type = string
+  default = "latest"
+}
+
+variable "minio_flavor" {
+  description = "MinIO Flavor: 'aistor' or 'server'"
+  type = string
+  default = "aistor"
+}
+
+variable "minio_binary_arch" {
+  description = "MinIO Binary Architecture"
+  type = string
+  default = "linux-amd64"
+}
+
 variable "minio_console_port" {
   description = "MinIO Console Port"
   type = number

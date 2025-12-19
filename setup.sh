@@ -7,7 +7,7 @@ install_minio_dependencies() {
 
   while [[ $attempt -lt $max_attempts ]]; do
     echo "Attempting to install MinIO Dependencies (Attempt: $((attempt + 1)))..."
-    sudo apt update && sudo apt install awscli tree jq tzdata chrony -y
+    sudo apt update && sudo apt install awscli tree jq tzdata xfsprogs chrony -y
 
     if [[ $? -eq 0 ]]; then
       success=true
@@ -64,9 +64,81 @@ minio_installation() {
   hosts=${hosts}
   disks=${disks}
   volume_name=${volume_name}
+  minio_binary_arch=${minio_binary_arch}
+  minio_binary_version=${minio_binary_version}
+  minio_flavor=${minio_flavor}
+  minio_license=${minio_license}
+
+  # Download AiStor Binary
+  if [[ $minio_flavor == "aistor" ]]; then
+    # License file is required for AiStor - Create /opt/minio/license
+    mkdir -p /opt/minio
+    echo $minio_license > /opt/minio/license
+
+    # If minio_binary_version is set to "latest", then download the latest MinIO AiStor Binary
+    if [[ $minio_binary_version == "latest" ]]; then
+      echo "Downloading Latest MinIO AiStor Binary..."
+      wget https://dl.min.io/$minio_flavor/minio/release/$minio_binary_arch/minio
+      
+      # If wget fails exit
+      if [[ $? -ne 0 ]]; then
+        echo "Failed to download MinIO AiStor Binary. Exiting..."
+        exit 1
+      fi
+
+    else
+      # Download Specific MinIO AiStor Binary (Example:  minio.RELEASE.2025-10-17T06-17-41Z)
+      wget -O minio https://dl.min.io/$minio_flavor/minio/release/$minio_binary_arch/archive/$minio_binary_version
+      
+      # If wget command fails, exit
+      if [[ $? -ne 0 ]]; then
+        echo "Failed to download MinIO AiStor Binary. Exiting..."
+        exit 1
+      fi
+
+    fi
+  fi
 
   # Download MinIO Server Binary
-  wget https://dl.min.io/server/minio/release/linux-amd64/minio
+  if [[ $minio_flavor == "server" ]]; then
+    # If minio_binary_version is set to "latest", then download the latest MinIO Server Binary
+    if [[ $minio_binary_version == "latest" ]]; then
+      echo "Downloading Latest MinIO Server Binary..."
+      wget https://dl.min.io/server/minio/release/$minio_binary_arch/minio
+      if [[ $? -ne 0 ]]; then
+        echo "Failed to download MinIO Server Binary. Exiting..."
+        exit 1
+      fi
+    else
+      # Download Specific MinIO Server Binary
+      wget -O minio https://dl.min.io/server/minio/release/$minio_binary_arch/archive/$minio_binary_version
+      if [[ $? -ne 0 ]]; then
+        echo "Failed to download MinIO Server Binary. Exiting..."
+        exit 1
+      fi
+    fi
+  fi
+
+  # Download MinIO Server Binary
+  if [[ $minio_flavor == "hotfix" ]]; then
+    # If minio_binary_version is set to "latest", then download the latest MinIO Server Binary
+    if [[ $minio_binary_version == "latest" ]]; then
+      echo "Downloading Latest MinIO Server Binary..."
+      wget https://dl.min.io/server/minio/hotfixes/$minio_binary_arch/minio
+      if [[ $? -ne 0 ]]; then
+        echo "Failed to download MinIO Server Binary. Exiting..."
+        exit 1
+      fi
+    else
+      # Download Specific MinIO Server Binary
+      wget -O minio wget https://dl.min.io/server/minio/hotfixes/$minio_binary_arch/$minio_binary_version
+      echo "Downloading Latest MinIO Server Binary..."
+      if [[ $? -ne 0 ]]; then
+        echo "Failed to download MinIO Server Binary. Exiting..."
+        exit 1
+      fi
+    fi
+  fi
 
   # Make executable
   chmod +x minio
@@ -106,11 +178,11 @@ minio_installation() {
   # Establish Disks
   idx=1
   for disk in ${disks}; do
-    sudo mkfs.xfs /dev/$disk
+    sudo mkfs.xfs -f -L MINIO$idx /dev/$disk
     sudo mkdir -p /mnt/data$idx
-    sudo mount /dev/$disk /mnt/data$idx
-    sudo chown -R minio-user:minio-user /mnt/data$idx  sudo chown -R minio-user:minio-user /mnt/data$idx
-    echo "/dev/$disk /mnt/data$idx xfs defaults,nofail 0 2" | sudo tee -a /etc/fstab
+    sudo mount -L MINIO$idx /mnt/data$idx
+    sudo chown -R minio-user:minio-user /mnt/data$idx
+    echo "LABEL=MINIO$idx /mnt/data$idx xfs defaults,noatime 0 2" | sudo tee -a /etc/fstab
     ((idx++))
   done
 
@@ -123,6 +195,9 @@ sudo tee /etc/default/minio > /dev/null << EOF
 
 MINIO_ROOT_USER=miniominio
 MINIO_ROOT_PASSWORD=miniominio
+%{ if length(minio_license) > 0 ~}
+MINIO_LICENSE=/opt/minio/license
+%{ endif ~}
 
 # MINIO_VOLUMES sets the storage volume or path to use for the MinIO server.
 

@@ -27,3 +27,8 @@ output "minio_host_info" {
 output "ebs_storage_volume_size" {
   value = var.ebs_storage_volume_size
 }
+
+output "minio_license_length" {
+  description = "Length of the MinIO license string (for validation)"
+  value       = length(var.minio_license)
+}
